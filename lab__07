@@ -1,0 +1,208 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Book Registration — Laravel Lab (All Code in One File)
+|--------------------------------------------------------------------------
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 1) MIGRATION: database/migrations/xxxx_create_books_table.php
+|--------------------------------------------------------------------------
+*/
+/*
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('books', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title', 150);
+            $table->string('author', 100);
+            $table->unsignedInteger('pages');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('books');
+    }
+};
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 2) MODEL: app/Models/Book.php
+|--------------------------------------------------------------------------
+*/
+/*
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Book extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['user_id', 'title', 'author', 'pages'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 3) CONTROLLER: app/Http/Controllers/BookController.php
+|--------------------------------------------------------------------------
+*/
+/*
+namespace App\Http\Controllers;
+
+use App\Models\Book;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class BookController extends Controller
+{
+    public function index()
+    {
+        $books = Book::where('user_id', Auth::id())->latest()->get();
+        return view('dashboard', compact('books'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title'  => 'required|string|max:150',
+            'author' => 'required|string|max:100',
+            'pages'  => 'required|integer|between:1,10000',
+        ]);
+
+        $validated['user_id'] = Auth::id();
+        Book::create($validated);
+
+        return redirect()->route('dashboard')->with('success', 'Book registered successfully.');
+    }
+}
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 4) ROUTES: routes/web.php
+|--------------------------------------------------------------------------
+*/
+/*
+use App\Http\Controllers\BookController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [BookController::class, 'index'])->name('dashboard');
+    Route::post('/books', [BookController::class, 'store'])->name('books.store');
+});
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 5) VIEW: resources/views/dashboard.blade.php
+|--------------------------------------------------------------------------
+*/
+/*
+<x-app-layout>
+    <h2>My Reading List</h2>
+
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    <form action="{{ route('books.store') }}" method="POST">
+        @csrf
+        <input type="text" name="title" value="{{ old('title') }}" placeholder="Title" maxlength="150" required>
+        @error('title') <span>{{ $message }}</span> @enderror
+
+        <input type="text" name="author" value="{{ old('author') }}" placeholder="Author" maxlength="100" required>
+        @error('author') <span>{{ $message }}</span> @enderror
+
+        <input type="number" name="pages" value="{{ old('pages') }}" placeholder="Pages" min="1" max="10000" required>
+        @error('pages') <span>{{ $message }}</span> @enderror
+
+        <button type="submit">Add Book</button>
+    </form>
+
+    @if ($books->isEmpty())
+        <p>You haven't registered any books yet.</p>
+    @else
+        <table>
+            <thead>
+                <tr><th>No.</th><th>Title</th><th>Author</th><th>Pages</th></tr>
+            </thead>
+            <tbody>
+                @foreach ($books as $index => $book)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $book->title }}</td>
+                        <td>{{ $book->author }}</td>
+                        <td>{{ $book->pages }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+</x-app-layout>
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| 6) LAYOUT: resources/views/layouts/app.blade.php
+|--------------------------------------------------------------------------
+*/
+/*
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Book List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">Book List</a>
+            <div class="d-flex">
+                @auth
+                    <span class="navbar-text me-3">{{ auth()->user()->name }}</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="btn btn-outline-light btn-sm" type="submit">Logout</button>
+                    </form>
+                @endauth
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {{ $slot }}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+*/
